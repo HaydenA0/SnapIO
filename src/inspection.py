@@ -1,6 +1,32 @@
+from os.path import normpath
 import cv2
 import numpy as np
 import os
+
+
+def calculate_luminance(normalized_image):
+    channel = normalized_image.shape[-1]
+    if channel == 3:
+        red = normalized_image[:, :, 0]
+        green = normalized_image[:, :, 1]
+        blue = normalized_image[:, :, 2]
+        luminance_image = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+        return (
+            np.mean(luminance_image),
+            np.min(luminance_image),
+            np.max(luminance_image),
+        )
+    else:
+        return (
+            np.mean(normalized_image),
+            np.min(normalized_image),
+            np.max(normalized_image),
+        )
+
+
+def calculate_histogram(normalized_image):
+    histo = np.histogram(normalized_image, bins=256, density=True)[0]
+    return histo
 
 
 class Inspector:
@@ -8,7 +34,11 @@ class Inspector:
         pass
 
     def basic_inspector(
-        self, img, is_verbose=True, want_size=False, image_path="images/image"
+        self,
+        img,
+        is_verbose=True,
+        want_size=False,
+        image_path="images/image",
     ):
         height, width, channels = img.shape
         if want_size:
@@ -85,4 +115,17 @@ class Inspector:
                 "std_dev": std_devs,
             }
 
-    pass
+    def basic_analysis(self, img):
+        normalized_image = np.array(img / 255.0, dtype=np.float32)
+        histo = calculate_histogram(normalized_image)
+        shannon_contrast = -np.sum(histo * np.log2(histo))
+        luminance_info = calculate_luminance(normalized_image)
+        grey_image = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        laplacian = cv2.Laplacian(grey_image, cv2.CV_64F)
+        laplacian_variance = laplacian.var()
+        return {
+            "Histogram Noramlized": histo,
+            "Contrast using Entropy": shannon_contrast,
+            "Luminance Information": luminance_info,
+            "Laplacien Variance": laplacian_variance,
+        }
