@@ -1,131 +1,136 @@
-from os.path import normpath
 import cv2
 import numpy as np
 import os
+import math
 
 
-def calculate_luminance(normalized_image):
-    channel = normalized_image.shape[-1]
-    if channel == 3:
-        red = normalized_image[:, :, 0]
-        green = normalized_image[:, :, 1]
-        blue = normalized_image[:, :, 2]
-        luminance_image = 0.2126 * red + 0.7152 * green + 0.0722 * blue
-        return (
-            np.mean(luminance_image),
-            np.min(luminance_image),
-            np.max(luminance_image),
-        )
-    else:
-        return (
-            np.mean(normalized_image),
-            np.min(normalized_image),
-            np.max(normalized_image),
-        )
+class ImageInspector:
 
+    def _validate_image(self, img: np.ndarray) -> None:
+        if not isinstance(img, np.ndarray):
+            raise TypeError("Input image must be a NumPy array.")
+        if img.ndim not in [2, 3]:
+            raise ValueError(
+                f"Input image must be 2D (grayscale) or 3D (color), but got {img.ndim} dimensions."
+            )
 
-def calculate_histogram(normalized_image):
-    histo = np.histogram(normalized_image, bins=256, density=True)[0]
-    return histo
+    def get_basic_properties(
+        self, img: np.ndarray, image_path: str = "images/", is_verbose: bool = True
+    ) -> dict:
+        self._validate_image(img)
 
-
-class Inspector:
-    def __init__(self) -> None:
-        pass
-
-    def basic_inspector(
-        self,
-        img,
-        is_verbose=True,
-        want_size=False,
-        image_path="images/image",
-    ):
-        height, width, channels = img.shape
-        if want_size:
-            try:
-                image_size_on_disk = os.path.getsize(image_path)
-                if is_verbose:
-                    print(f"Image size on disk is {image_size_on_disk}")
-            except Exception as e:
-                raise ValueError(f"Couldn't get image size, check path.")
+        if img.ndim == 2:
+            height, width = img.shape
+            channels = 1
+        else:
+            height, width, channels = img.shape
 
         encoding = img.dtype
         bytes_per_channel = img.itemsize
-        image_size_on_memory = height * width * channels * bytes_per_channel
-        divisor = np.gcd(width, height)
-        aspect_ratio = (width // divisor, height // divisor)
+        size_in_memory = img.nbytes
+
+        try:
+
+            divisor = math.gcd(width, height)
+            aspect_ratio = (width // divisor, height // divisor)
+        except Exception:
+
+            aspect_ratio = (width, height)
+
+        properties = {
+            "height": height,
+            "width": width,
+            "channels": channels,
+            "encoding": encoding,
+            "bytes_per_channel": bytes_per_channel,
+            "size_in_memory_bytes": size_in_memory,
+            "aspect_ratio": f"{aspect_ratio[0]}:{aspect_ratio[1]}",
+        }
+
+        if image_path:
+            try:
+                properties["size_on_disk_bytes"] = os.path.getsize(image_path)
+            except FileNotFoundError:
+                print(
+                    f"Warning: Could not find file at '{image_path}' to get disk size."
+                )
+            except Exception as e:
+                print(
+                    f"Warning: Could not get disk size for '{image_path}'. Error: {e}"
+                )
 
         if is_verbose:
-            print(
-                f"Image height : {height}\n Image width : {width}\n Image channels : {channels}"
-            )
-            print(
-                f"Image Encoding : {encoding}\n Image bytes per channel : {bytes_per_channel}"
-            )
-            print(
-                f"Image size on RAM : {image_size_on_memory}\n Image aspect_ratio is {aspect_ratio[0]}:{aspect_ratio[1]}"
-            )
-        return (
-            height,
-            width,
-            channels,
-            encoding,
-            bytes_per_channel,
-            image_size_on_memory,
-            aspect_ratio,
-        )
+            print("--- Image Basic Properties ---")
+            for key, value in properties.items():
+                print(f"{key.replace('_', ' ').title():<25}: {value}")
+            print("----------------------------")
 
-    def basic_statistcs(self, img):
-        channel = img.shape[-1]
-        if channel == 1:
-            mean = np.mean(img)
+        return properties
+
+    def get_statistics(self, img: np.ndarray) -> dict:
+        self._validate_image(img)
+
+        if img.ndim == 2:
+            mean, std_dev = cv2.meanStdDev(img)
+            min_val, max_val, _, _ = cv2.minMaxLoc(img)
             median = np.median(img)
-            pmin = np.min(img)
-            pmax = np.max(img)
-            std_dev = np.std(img)
-            return {
-                "mean": mean,
+            stats = {
+                "mean": mean[0][0],
+                "std_dev": std_dev[0][0],
+                "min": min_val,
+                "max": max_val,
                 "median": median,
-                "min": pmin,
-                "max": pmax,
-                "std_dev": std_dev,
             }
-
         else:
 
-            means = []
-            medians = []
-            pmins = []
-            pmaxs = []
-            std_devs = []
+            mean, std_dev = cv2.meanStdDev(img)
+            b, g, r = cv2.split(img)
 
-            for i in range(channel):
-                single_channel = img[:, :, i]
-                means.append(np.mean(single_channel))
-                medians.append(np.median(single_channel))
-                pmins.append(np.min(single_channel))
-                pmaxs.append(np.max(single_channel))
-                std_devs.append(np.std(single_channel))
+            min_vals = [cv2.minMaxLoc(c)[0] for c in (b, g, r)]
+            max_vals = [cv2.minMaxLoc(c)[1] for c in (b, g, r)]
+            medians = [np.median(c) for c in (list(b), list(g), list(r))]
 
-            return {
-                "mean": means,
-                "median": medians,
-                "min": pmins,
-                "max": pmaxs,
-                "std_dev": std_devs,
+            stats = {
+                "mean_bgr": mean.flatten().tolist(),
+                "std_dev_bgr": std_dev.flatten().tolist(),
+                "min_bgr": min_vals,
+                "max_bgr": max_vals,
+                "median_bgr": medians,
             }
+        return stats
 
-    def basic_analysis(self, img):
-        normalized_image = np.array(img / 255.0, dtype=np.float32)
-        histo = calculate_histogram(normalized_image)
-        shannon_contrast = -np.sum(histo * np.log2(histo))
-        luminance_info = calculate_luminance(normalized_image)
-        grey_image = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        laplacian = cv2.Laplacian(grey_image, cv2.CV_64F)
-        laplacian_variance = laplacian.var()
+    def get_content_analysis(self, img: np.ndarray) -> dict:
+        self._validate_image(img)
+        if img.dtype != np.uint8:
+            raise TypeError("Content analysis requires a uint8 image (0-255 range).")
+
+        if img.ndim == 3:
+
+            gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_image = img
+
+        mean_lum, _, min_lum, max_lum = cv2.meanStdDev(gray_image) + cv2.minMaxLoc(
+            gray_image
+        )
+        luminance_info = {
+            "mean": mean_lum[0][0],
+            "min": min_lum,
+            "max": max_lum,
+        }
+
+        hist = cv2.calcHist([gray_image], [0], None, [256], [0, 256])
+        hist_normalized = hist.ravel() / hist.sum()
+
+        entropy = -np.sum(
+            hist_normalized * np.log2(hist_normalized + np.finfo(float).eps)
+        )
+
+        laplacian_var = cv2.Laplacian(gray_image, cv2.CV_64F).var()
+
         return {
-            "Histogram Noramlized": histo,
-            "Contrast using Entropy": shannon_contrast,
-            "Luminance Information": luminance_info,
-            "Laplacien Variance": laplacian_variance,
+            "luminance": luminance_info,
+            "shannon_entropy": entropy,
+            "laplacian_variance (blur)": laplacian_var,
+            "normalized_histogram": hist_normalized,
         }
