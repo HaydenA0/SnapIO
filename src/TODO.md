@@ -8,7 +8,7 @@
     - [ ] Processing/Analysis: Performing calculations on image data (calculate_normal_difference_of_images).
 
 - Inspection 
-    - [ ] Basic inspector that shows the image size, format, dimensions, aspect ratio and encoding
+    - [x] Basic inspector that shows the image size, format, dimensions, aspect ratio and encoding
     - [ ] Basic Statistics that shows the mean, std-dev, min and max pixel (per channel)
     - [ ] Basic Analysis that shows the average brightness, average contrast, laplacian_variance for contrast , [complexity: edge_percentage] to be searched,
     - [ ] Dominent Colors that shows the most Dominent color if any
