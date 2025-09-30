@@ -9,7 +9,7 @@ class ImageIO:
     def load_image(self, image_path, format="RGB"):
         if not os.path.exists(image_path):
             raise FileNotFoundError(f"Image file not found: {image_path}")
-        img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+        img = cv2.imread(image_path)
         if img is None:
             raise IOError(f"Error opening image in {image_path}.")
 

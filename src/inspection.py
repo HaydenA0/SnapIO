@@ -110,15 +110,6 @@ class ImageInspector:
         else:
             gray_image = img
 
-        mean_lum, _, min_lum, max_lum = cv2.meanStdDev(gray_image) + cv2.minMaxLoc(
-            gray_image
-        )
-        luminance_info = {
-            "mean": mean_lum[0][0],
-            "min": min_lum,
-            "max": max_lum,
-        }
-
         hist = cv2.calcHist([gray_image], [0], None, [256], [0, 256])
         hist_normalized = hist.ravel() / hist.sum()
 
@@ -129,7 +120,6 @@ class ImageInspector:
         laplacian_var = cv2.Laplacian(gray_image, cv2.CV_64F).var()
 
         return {
-            "luminance": luminance_info,
             "shannon_entropy": entropy,
             "laplacian_variance (blur)": laplacian_var,
             "normalized_histogram": hist_normalized,

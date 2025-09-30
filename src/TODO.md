@@ -3,7 +3,7 @@
 
     - [-] Inspection: Getting metadata about an image (inspect_image).
 
-    - [ ] Visualization: Displaying images to the user (show_image, compare_images).
+    - [x] Visualization: Displaying images to the user (show_image, compare_images).
 
     - [ ] Processing/Analysis: Performing calculations on image data (calculate_normal_difference_of_images).
 
