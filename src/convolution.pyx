@@ -31,6 +31,6 @@ def apply_kernel_cython(double[:,:] image, double[:,:] rotated_kernel ):
                     img_x_base = j - kernel_width//2 
                     for ky in range(kernel_height):
                         for kx in range(kernel_width):
-                            accumulator += image[img_y_base + ky, img_x_base+kx] * rotated_kernel[ky, kx]
-                    output_view[i,j] = accumulator
+                            accumulator = accumulator + image[img_y_base + ky, img_x_base+kx] * rotated_kernel[ky, kx]
+                            output_view[i,j] = accumulator
     return output_np
