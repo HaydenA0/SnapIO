@@ -1,3 +1,4 @@
+# ./inspection.py
 import cv2
 import numpy as np
 import os
@@ -7,8 +8,6 @@ import math
 class ImageInspector:
 
     def _validate_image(self, img: np.ndarray) -> None:
-        if not isinstance(img, np.ndarray):
-            raise TypeError("Input image must be a NumPy array.")
         if img.ndim not in [2, 3]:
             raise ValueError(
                 f"Input image must be 2D (grayscale) or 3D (color), but got {img.ndim} dimensions."

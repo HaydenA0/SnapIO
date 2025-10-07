@@ -1,4 +1,6 @@
+# ./processing.py
 import numpy as np
+import convolution
 
 
 def rotate_kernel(kernel):
@@ -6,8 +8,7 @@ def rotate_kernel(kernel):
 
 
 def convolution_kernel_segment(kernel, patch):
-    kernel_rotated = rotate_kernel(kernel)
-    return np.sum(kernel_rotated * patch)
+    return np.sum(kernel * patch)
 
 
 class Processor:
@@ -25,8 +26,9 @@ class Processor:
             )
         return np.sum((img1_bigger - img2_bigger) ** 2) / (x1 * y1)
 
-    def apply_kernel(self, image, kernel):
+    def apply_kernel_old(self, image, kernel):
         n, m = kernel.shape
+        rotated_kernel = rotate_kernel(kernel)
         output = np.zeros_like(image)
         floor_n = n // 2
         floor_m = m // 2
@@ -35,9 +37,13 @@ class Processor:
         for i in range(floor_n, image.shape[0] - ceil_n + 1):
             for j in range(floor_m, image.shape[1] - ceil_m + 1):
                 patch = image[i - floor_n : i + ceil_n, j - floor_m : j + ceil_m]
-                output[i, j] = convolution_kernel_segment(kernel, patch)
+                output[i, j] = convolution_kernel_segment(rotated_kernel, patch)
+        return output
 
-            return output
+    def apply_kernel_new(self, image, kernel):
+        rotated_kernel = rotate_kernel(kernel)
+        output_image = convolution.apply_kernel_cython(image, rotated_kernel)
+        return output_image
 
     def median_filter(self, image, grid_size: int = 3):
         if not isinstance(image, np.ndarray):

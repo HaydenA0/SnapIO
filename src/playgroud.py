@@ -1,5 +1,6 @@
+# ./playgroud.py
 from utilsio import ImageIO
-import cv2
+import numpy as np
 from visulization import Visualizer
 from inspection import ImageInspector
 from processing import Processor
@@ -11,5 +12,4 @@ ii = ImageInspector()
 proc = Processor()
 
 img = io.load_image("./images/grass.png", format="Grayscale")
-vis.compare_images([img, 1 / (img + 1)], ["Image", "Image squared"])
-print(proc.calculate_normal_difference_of_images(img, 1 / (img + 1)))
+kernel = np.ones((3, 3)) / 9
