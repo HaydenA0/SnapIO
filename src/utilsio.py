@@ -8,6 +8,9 @@ class ImageIO:
         pass
 
     def load_image(self, image_path, format="RGB"):
+        """
+        format = "RGB", "RGBA", "HLS", "Grayscale", "LAB"
+        """
         if not os.path.exists(image_path):
             raise FileNotFoundError(f"Image file not found: {image_path}")
         img = cv2.imread(image_path)
