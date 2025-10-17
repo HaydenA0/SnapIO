@@ -1,7 +1,5 @@
 from scipy.fft import fft2, fftshift
 import numpy as np
-import matplotlib.pyplot as plt
-
 
 from utilsio import ImageIO
 from visulization import Visualizer
